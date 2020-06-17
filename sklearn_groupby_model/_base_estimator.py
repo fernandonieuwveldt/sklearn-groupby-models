@@ -32,7 +32,7 @@ class BaseGroupbyModel(sklearn.base.BaseEstimator):
         Apply estimator on each group splitted by split feature
 
         :param X: pandas dataframe with test data
-        :return: model probabilities
+        :return: numpy array of final predictions
         """
         predictions = numpy.zeros((X.shape[0], ))
         for name, group_features in X.groupby(self.split_feature):
@@ -40,25 +40,21 @@ class BaseGroupbyModel(sklearn.base.BaseEstimator):
         return predictions
 
 
-class BaseGroupbyKFoldModel(sklearn.base.BaseEstimator):
-    """
-    Apply kfold split and apply model on each split
-    """
-class BaseKFoldModel():
+class BaseKFoldModel(sklearn.base.BaseEstimator):
     """
     Apply models on different fold splits of the data
     """
 
-    def __init__(self, n_split=5, estimator=None, split_feature=None, **kwargs):
+    def __init__(self, n_split=5, estimator=None, split_feature=None, **fit_params):
         self.n_split = n_split
         self.estimmator = None
         self.split_feature = split_feature
         self.split_estimators = defaultdict(list)
-        self.kwargs = kwargs
+        self.fit_params = fit_params
 
     def fit(self, X=None, y=None):
         """
-        Fits _SPLITS number of models
+        Fits n_split number of estimators
         :param X: pandas data_frame for training
         :param y: train target variable
 
@@ -68,20 +64,19 @@ class BaseKFoldModel():
         for fold_n, (train_index, valid_index) in enumerate(folds.split(xtrain)):
             x_train_ = X[train_index, :]
             y_train_ = y[train_index]
-            self.regressor.fit(x_train_, y_train_, **fit_params)
+            self.regressor.fit(x_train_, y_train_, **self.fit_params)
             self.estimators.append(self.Regressor)
         return self
 
-    def predict(self, xtest=None):
+    def predict(self, X=None):
         """
-        Apply trained Regressor on test data
-        :param xtest: Test data
-        :return: array of predicted probability values
+        Apply n_split trained estimators on test data
+        :param X: Test data
+        :return: numpy array of final predictions
         """
-        xtest = self.energy_transformer.transform(xtest)
-        pred = numpy.zeros((xtest.shape[0], 2))
-        for reg in self.estimators:
-            pred += reg.predict(xtest)/self._SPLITS
+        predictions = numpy.zeros((X.shape[0], 2))
+        for estimator in self.estimators:
+            predictions += estimator.predict(X) / self.n_split
         return pred
     
 class GroupbyRegressorModel(sklearn.base.RegressorMixin):
