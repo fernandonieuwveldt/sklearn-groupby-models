@@ -43,44 +43,6 @@ class BaseGroupbyModel(sklearn.base.BaseEstimator):
         return predictions
 
 
-class BaseKFoldModel(sklearn.base.BaseEstimator):
-    """
-    Apply models on different fold splits of the data
-    """
-
-    def __init__(self, n_split=5, estimator=None, split_feature=None, **fit_params):
-        self.n_split = n_split
-        self.estimmator = None
-        self.split_feature = split_feature
-        self.split_estimators = defaultdict(list)
-        self.fit_params = fit_params
-
-    def fit(self, X=None, y=None):
-        """
-        Fits n_split number of estimators on the groupby data
-
-        :param X: pandas data_frame for training
-        :param y: train target variable
-        :return: BaseKFoldModel object
-        """
-        folds = KFold(n_splits=self._SPLITS, shuffle=True)
-        for fold_n, (train_index, valid_index) in enumerate(folds.split(xtrain)):
-            x_train_ = X[train_index, :]
-            y_train_ = y[train_index]
-            self.regressor.fit(x_train_, y_train_, **self.fit_params)
-            self.estimators.append(self.Regressor)
-        return self
-
-    def predict(self, X=None):
-        """
-        Apply n_split trained estimators on test data
-        :param X: Test data
-        :return: numpy array of final predictions
-        """
-        predictions = numpy.zeros((X.shape[0], 2))
-        for estimator in self.estimators:
-            predictions += estimator.predict(X) / self.n_split
-        return pred
     
 class GroupbyRegressorModel(BaseGroupbyModel, sklearn.base.RegressorMixin):
     """
