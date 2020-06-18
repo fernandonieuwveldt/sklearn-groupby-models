@@ -1,5 +1,8 @@
 import numpy
 import sklearn.base
+import sklearn.model_selection
+
+from collections import defaultdict
 
 
 class BaseGroupbyModel(sklearn.base.BaseEstimator):
@@ -54,10 +57,10 @@ class BaseKFoldModel(sklearn.base.BaseEstimator):
 
     def fit(self, X=None, y=None):
         """
-        Fits n_split number of estimators
+        Fits n_split number of estimators on the groupby data
+
         :param X: pandas data_frame for training
         :param y: train target variable
-
         :return: BaseKFoldModel object
         """
         folds = KFold(n_splits=self._SPLITS, shuffle=True)
@@ -79,26 +82,36 @@ class BaseKFoldModel(sklearn.base.BaseEstimator):
             predictions += estimator.predict(X) / self.n_split
         return pred
     
-class GroupbyRegressorModel(sklearn.base.RegressorMixin):
+class GroupbyRegressorModel(BaseGroupbyModel, sklearn.base.RegressorMixin):
     """
     Regressor based on model on different groupby splits
     """
     def __init__(self, estimator=None, split_feature=None):
         super().__init__(estimator=estimator,
                          split_feature=split_feature,
-                         **kwargs
-                         )
+                         **kwargs)
 
 
-class GroupbyClassifierModel(sklearn.base.ClassifierMixin):
+class GroupbyClassifierModel(BaseGroupbyModel, sklearn.base.ClassifierMixin):
     """
     Classifier based on model on different groupby splits
     """
-    def __init__(self, estimator=None, split_feature=None):
+    def __init__(self, estimator=None, split_feature=None, **kwargs):
         super().__init__(estimator=estimator,
                          split_feature=split_feature,
-                         **kwargs
-                         )
+                         **kwargs)
+
+    def predict_proba(self, X=None):
+        """
+        Apply estimator on each group splitted by split feature and compute probabilities
+
+        :param X: pandas dataframe with test data
+        :return: numpy array of probabilities
+        """
+        predictions = numpy.zeros((X.shape[0], ))
+        for name, group_features in X.groupby(self.split_feature):
+            predictions[group.index.values] += self.split_estimators[name].predict_proba(group_features)
+        return predictions
 
 class GroupbyPipeline:
     """
@@ -106,3 +119,7 @@ class GroupbyPipeline:
     It can be a pipeline of transformers with the GroupbyEstimator at the end                                                                                                                                                                                                                                          
     """
 
+
+if __name__ == '__main__':
+    from sklearn.linear_model import LogisticRegression
+    clf = GroupbyClassifierModel(estimator=LogisticRegression())
