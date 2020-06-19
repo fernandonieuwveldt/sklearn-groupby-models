@@ -1,13 +1,13 @@
 import sklearn.base
 
 
-class BaseGroupbyTransformer(skearn.base.TransformerMixin):
+class BaseGroupbyTransformer(sklearn.base.TransformerMixin):
     """
-    This class groups data by feature and apply a transformer on each group. Can be used in an sklearn
+    This class groups data by split_feature and apply a transformer on each group. Can be used in an sklearn
     pipeline
     """
-    def __init__(self, feature=None, transformer=None, **kwargs):
-        self.feature = feature
+    def __init__(self, split_feature=None, transformer=None, **kwargs):
+        self.split_feature = split_feature
         self.transformer = transformer
         self.kwargs = kwargs
 
@@ -17,12 +17,11 @@ class BaseGroupbyTransformer(skearn.base.TransformerMixin):
         
         """
         self.group_transform_ = {}
-        for _id, group in X.groupby(self.feature):
+        for _id, group in X.groupby(self.split_feature):
             self.group_transform_[_id] = self.transformer(**self.kwargs).fit(X, y)
         return self
 
     def transform(self, X, y=None):
-        for _id, group in X.groupby(self.feature):
-            group_indices = X[self.feature]==_id
-            X[group_indices, :] = self.group_transform_[_id].transform(X[group_indices, :])
+        for _id, group_features in X.groupby(self.split_feature):
+            X[group_features.index.values, :] = self.group_transform_[_id].transform(X[group_indices, :])
         return X
